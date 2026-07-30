@@ -1,0 +1,221 @@
+Vendor Inventory Reconciliation service (Virs) 
+	Low level Design (LLD) 
+ 
+ 
+1. Purpose: 
+ 
+This Low-level design doc describes the internal design of the vendor Inventory Reconciliation service including package structure, class responsibilities, database entities, Api flow, exception handling and validation strategy. 
+ 
+2. Package structure: 
+
+ 
+controller 
+service 
+repository 
+entitity 
+dto 
+config 
+exception 
+aws 
+util 
+model 
+ 
+3. Component Responsibilities 
+ 
+
+Controller: Expose REST APIs and validate incoming requests. 
+
+ 
+
+Service: Implement reconciliation business logic. 
+
+ 
+
+Repository: Perform database operations using Spring Data JPA. 
+
+ 
+
+AWS Adapter: Provide S3, SQS/SNS, and Secrets Manager abstraction. 
+
+ 
+
+Validation: Validate CSV structure and business rules. 
+
+ 
+
+Exception Handler: Handle and format application errors. 
+
+ 
+
+4. Class Design 
+
+ 
+
+ReconciliationController: REST endpoints for starting, querying, and re-triggering reconciliation. 
+
+ReconciliationService: Coordinates validation, parsing, reconciliation, and persistence. 
+
+CsvParserService: Parses CSV files into DTO objects. 
+
+InventoryValidationService: Performs file and business validation. 
+
+NotificationService: Publishes discrepancy notifications. 
+
+InventoryRepository: Accesses internal inventory data. 
+
+ReconciliationResultRepository: Stores reconciliation results. 
+
+5. Entity Design 
+
+
+InternalInventory: id, sku, quantity, warehouse, updatedAt 
+
+VendorInventory: id, vendorId, sku, quantity, fileName, uploadedAt 
+
+ReconciliationResult: id, batchId, sku, vendorQuantity, dbQuantity, status, remarks, createdAt 
+
+BatchExecution: id, batchId, fileName, status, startedAt, completedAt 
+
+ 
+
+6. DTO Design 
+
+ 
+
+ReconciliationRequestDto: fileName 
+
+ReconciliationResponseDto: batchId, status, processedRecords, mismatchCount 
+
+ReconciliationResultDto: sku, vendorQuantity, dbQuantity, status, remarks 
+
+ 
+
+7. REST API Design 
+
+ 
+
+Method 
+
+Endpoint 
+
+Description 
+
+ 
+
+POST 
+
+/api/v1/reconciliation/start 
+
+Start reconciliation for a file. 
+
+ 
+
+GET 
+
+/api/v1/reconciliation/{batchId} 
+
+Get reconciliation results. 
+
+ 
+
+POST 
+
+/api/v1/reconciliation/retrigger/{batchId} 
+
+Re-trigger a completed batch. 
+
+ 
+
+8. Sequence Flow 
+
+ 
+
+Client -> Controller -> Validation -> CSV Parser -> Reconciliation Service -> Repository -> Database -> Notification Service -> Response 
+
+9. Validation Rules 
+
+ 
+
+File must exist. 
+
+File must be CSV. 
+
+SKU cannot be empty. 
+
+Quantity must be non-negative. 
+
+Duplicate SKU records in the same file are not allowed. 
+
+ 
+
+10. Exception Handling 
+
+ 
+
+FileNotFoundException: Input file is missing. 
+
+InvalidCsvFormatException: CSV structure is invalid. 
+
+DuplicateRecordException: Duplicate SKU found. 
+
+DatabaseConnectionException: Database is unavailable. 
+
+NotificationPublishException: Notification could not be published. 
+
+ 
+
+11. Logging Strategy 
+
+ 
+
+Batch start and completion. 
+
+File validation result. 
+
+Record counts processed. 
+
+Mismatch counts. 
+
+Notification publication status. 
+
+Error details with stack trace. 
+ 
+
+12. Content Negotiation 
+ 
+
+The query API supports application/json and text/csv responses. The response format is selected using the HTTP Accept header. 
+ 
+
+13. API Versioning 
+ 
+
+URI versioning is used for all APIs, for example /api/v1/reconciliation/start. This strategy is easy to understand and maintain. 
+ 
+
+14. Testing Strategy 
+ 
+
+Unit tests for service layer. 
+
+Repository tests using an in-memory database. 
+
+Controller tests using MockMvc. 
+
+Positive and negative test cases. 
+
+Edge cases such as empty files and duplicate records. 
+
+15. AI Usage Documentation 
+ 
+A separate document will be maintained to record which parts of the implementation were assisted by AI tools and which parts were implemented independently. 
+
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 

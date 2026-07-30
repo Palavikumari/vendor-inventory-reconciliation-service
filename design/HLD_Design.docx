@@ -1,0 +1,117 @@
+Vendor Inventory Reconciliation Services (VIRS)
+---------------------------------------------------
+
+Version : 1.0
+Purpose: Design document for the vendor Inventory Reconcilliation Service(VIRS).
+
+1. Business Requirement:
+   ---------------------
+
+Develp a spring boot backend service that ingest vendor inventory CSV files from AWS S3(or a local mock), validates and parses them, reconciles them against PostgreSQl , stores reconciliation results , publishes discrepancies to sqs/sns,  and exposes versioned REST API's with Swagger/openAPI.
+
+2.Functional Requirements:
+---------------------------
+
+-Read Inventory Files
+-Validate CSV
+-Parse records
+-Reconcile with database
+-Publish discrepancies
+-Query reconcilliation results
+-Re-Trigger reconcilliation (idempotent)
+-JSON/CSV responses
+
+3. Non Functional Req:
+--------------------------
+
+-Scalable
+-secure
+-Maintainable
+-Logging
+-Exception Handling
+- 80% unit test coverage
+- Git workflow
+
+4. High-level-Architecture
+----------------------------
+
+Vendor-> S3(Local folder)->springBoot Rest Api-> Validation-> Parser-> Reconciliation service->PostgreSQL + Notification(SQS/SNS)--> Rest Apis ->swagger
+
+
+5. Components:
+---------------
+
+
+controller,service,repository,entity,STO,validation,Exception handling,handler,AWS adapter,Notification,service
+
+6.Database:
+-------------
+
+Table: vendor_inventory, internal_inventory, reconciliation_result.\, batch_execution.
+
+7. API Design:
+----------------
+
+Post/api/V1/reconciliation/start
+GET/api/V1/reconciliation/{batchId}
+GET/api/V1/reconciliation/retrigger/{batchId}
+
+8.Api vesrsioning
+-----------------
+
+URI versioning: /api/v1/...chosen for simplicity and maintainability.
+
+9.Content Negotiation
+----------------------
+
+Support application / json and text/csv using Accept header.
+
+
+10.security
+---------------
+
+Aws security manager (or local confg for development).
+
+11. git strategy:
+-----------------
+
+Main-->develop->feature/* with PR review and conventional commits.
+
+
+12. Testing
+--------------
+
+JUNIT, mockito,positive ,negative, and edge cases with targer 80 percent cov.
+
+13.Ai usage
+---------------
+
+Maintain a separate doc  describing ai assisted and independently  implemented work.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
