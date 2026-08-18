@@ -14,7 +14,6 @@ import com.company.virs.repository.BatchExecutionRepository;
 import com.company.virs.repository.VendorInventoryRepository;
 import com.company.virs.service.InventoryService;
 import com.company.virs.storage.StorageService;
-import com.company.virs.util.DateUtil;
 import com.company.virs.validation.CsvValidation;
 import com.company.virs.validation.InventoryValidation;
 import lombok.RequiredArgsConstructor;
@@ -54,18 +53,17 @@ public class InventoryServiceImpl
             MultipartFile file) {
 
         log.info(
-                "Starting inventory upload for Batch Id : {}",
+                "Starting inventory upload for batch : {}",
                 batchId);
 
+        /*
+         * 1. Validate uploaded file.
+         */
         csvValidation.validate(file);
 
-        String uploadFilePath =
-                storageService.uploadFile(file);
-
-        log.info(
-                "File stored at: {}",
-                uploadFilePath);
-
+        /*
+         * 2. Find batch.
+         */
         BatchExecution batchExecution =
                 batchRepository.findById(batchId)
                         .orElseThrow(() ->
@@ -73,13 +71,55 @@ public class InventoryServiceImpl
                                         "Batch not found : "
                                                 + batchId));
 
+        /*
+         * 3. Only allow upload when batch is PENDING.
+         */
+        if (!BatchStatus.PENDING.name()
+                .equals(batchExecution.getStatus())) {
+
+            throw new IllegalStateException(
+                    "Inventory can only be uploaded for a PENDING batch. "
+                            + "Current status : "
+                            + batchExecution.getStatus());
+        }
+
+        /*
+         * 4. Store original CSV in MinIO.
+         */
+        String storedFileName =
+                storageService.uploadFile(file);
+
+        log.info(
+                "File stored successfully in MinIO : {}",
+                storedFileName);
+
+        /*
+         * 5. Parse CSV.
+         */
         List<InventoryRequest> requests =
                 csvParser.parse(file);
 
+        if (requests == null || requests.isEmpty()) {
+
+            /*
+             * Remove uploaded file if CSV contains no records.
+             */
+            storageService.deleteFile(
+                    storedFileName);
+
+            throw new IllegalArgumentException(
+                    "CSV file does not contain any inventory records.");
+        }
+
+        /*
+         * 6. Validate and convert every CSV record.
+         */
         List<VendorInventory> vendorInventories =
                 new ArrayList<>();
 
         for (InventoryRequest request : requests) {
+
+            inventoryValidation.validate(request);
 
             VendorInventory vendorInventory =
                     inventoryMapper.toVendorInventoryEntity(
@@ -93,21 +133,23 @@ public class InventoryServiceImpl
                     vendorInventory);
         }
 
-        log.info(
-                "Records to save: {}",
-                vendorInventories.size());
-
+        /*
+         * 7. Persist inventory.
+         */
         vendorRepository.saveAll(
                 vendorInventories);
 
+        /*
+         * 8. Update batch statistics.
+         *
+         * Uploading is not processing.
+         */
         batchExecution.setTotalRecords(
                 vendorInventories.size());
 
-        batchExecution.setProcessedRecords(
-                vendorInventories.size());
+        batchExecution.setProcessedRecords(0);
 
-        batchExecution.setFailedRecords(
-                0);
+        batchExecution.setFailedRecords(0);
 
         batchExecution.setBatchSize(
                 500);
@@ -115,12 +157,12 @@ public class InventoryServiceImpl
         batchExecution.setStatus(
                 BatchStatus.PENDING.name());
 
-
         batchRepository.save(
                 batchExecution);
 
         log.info(
-                "Successfully uploaded {} inventory records.",
+                "Inventory upload completed. Batch : {}, Records : {}",
+                batchId,
                 vendorInventories.size());
 
         return inventoryMapper.toUploadResponse(
@@ -131,6 +173,10 @@ public class InventoryServiceImpl
     @Transactional(readOnly = true)
     public List<InventoryResponse> getInventoryByBatch(
             UUID batchId) {
+
+        log.info(
+                "Fetching inventory for batch : {}",
+                batchId);
 
         BatchExecution batchExecution =
                 batchRepository.findById(batchId)
@@ -146,7 +192,8 @@ public class InventoryServiceImpl
         List<InventoryResponse> responses =
                 new ArrayList<>();
 
-        for (VendorInventory inventory : inventories) {
+        for (VendorInventory inventory :
+                inventories) {
 
             responses.add(
                     inventoryMapper.toInventoryResponse(
@@ -162,6 +209,21 @@ public class InventoryServiceImpl
             UUID batchId,
             String sku) {
 
+        if (sku == null || sku.isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "SKU cannot be blank.");
+        }
+
+        /*
+         * Verify batch exists.
+         */
+        batchRepository.findById(batchId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Batch not found : "
+                                        + batchId));
+
         VendorInventory inventory =
                 vendorRepository
                         .findByBatchExecution_BatchIdAndSku(
@@ -170,7 +232,9 @@ public class InventoryServiceImpl
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Inventory not found for SKU : "
-                                                + sku));
+                                                + sku
+                                                + " in Batch : "
+                                                + batchId));
 
         return inventoryMapper.toInventoryResponse(
                 inventory);

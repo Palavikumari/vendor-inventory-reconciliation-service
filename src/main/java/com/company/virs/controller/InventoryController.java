@@ -4,12 +4,13 @@ import com.company.virs.dto.response.InventoryResponse;
 import com.company.virs.dto.response.UploadResponse;
 import com.company.virs.service.InventoryService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ import java.util.UUID;
 
 @Tag(
         name = "Inventory API",
-        description = "Vendor Inventory APIs"
+        description = "Vendor inventory management and query APIs"
 )
 @RestController
 @RequestMapping("/api/v1/inventory")
@@ -30,17 +31,15 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     @Operation(
-            summary =
-                    "Upload Vendor Inventory CSV",
-            description =
-                    """
-                    Uploads vendor inventory records.
-    
-                    File is stored in MinIO.
-    
-                    Records are validated,
-                    parsed and persisted
-                    into VendorInventory.
+            summary = "Upload Vendor Inventory CSV",
+            description = """
+                    Uploads a vendor inventory CSV file.
+
+                    The file is validated, parsed and stored
+                    in the configured object storage.
+
+                    Inventory records are then persisted against
+                    the specified processing batch.
                     """
     )
     @ApiResponses({
@@ -62,8 +61,11 @@ public class InventoryController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<UploadResponse> uploadInventory(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam UUID batchId) {
+            @RequestParam("file")
+            MultipartFile file,
+
+            @RequestParam
+            UUID batchId) {
 
         UploadResponse response =
                 inventoryService.uploadInventory(
@@ -71,14 +73,38 @@ public class InventoryController {
                         file);
 
         return ResponseEntity
-                .status(HttpStatus.CREATED)
+                .status(201)
                 .body(response);
     }
 
     @Operation(
             summary = "Get inventory by batch",
-            description =
-                    "Returns inventory records in JSON or CSV format based on Accept header"
+            description = """
+                    Returns all inventory records associated
+                    with the specified batch.
+
+                    The response representation is selected
+                    using HTTP content negotiation.
+
+                    Supported representations:
+
+                    application/json
+                    text/csv
+
+                    JSON is returned by default.
+
+                    Examples:
+
+                    Accept: application/json
+
+                    Accept: text/csv
+
+                    Alternatively:
+
+                    ?format=json
+
+                    ?format=csv
+                    """
     )
     @ApiResponses({
             @ApiResponse(
@@ -97,74 +123,25 @@ public class InventoryController {
                     "text/csv"
             }
     )
-    public ResponseEntity<?> getInventoryByBatch(
-            @PathVariable UUID batchId,
-            @RequestHeader(
-                    value = HttpHeaders.ACCEPT,
-                    required = false)
-            String acceptHeader) {
+    public ResponseEntity<List<InventoryResponse>>
+    getInventoryByBatch(
+            @Parameter(
+                    description = "Processing batch identifier",
+                    required = true
+            )
+            @PathVariable UUID batchId) {
 
-        List<InventoryResponse> inventoryList =
+        List<InventoryResponse> response =
                 inventoryService.getInventoryByBatch(
                         batchId);
 
-        if (acceptHeader != null
-                && acceptHeader.contains("text/csv")) {
-
-            StringBuilder csv =
-                    new StringBuilder();
-
-            csv.append(
-                    "vendorId,sku,productName,vendorQuantity,reconciliationStatus,quantityDifference,remarks\n");
-
-            for (InventoryResponse inventory : inventoryList) {
-
-                csv.append(
-                                inventory.getVendorId())
-                        .append(",")
-
-                        .append(
-                                inventory.getSku())
-                        .append(",")
-
-                        .append(
-                                inventory.getProductName())
-                        .append(",")
-
-                        .append(
-                                inventory.getVendorQuantity())
-                        .append(",")
-
-                        .append(
-                                inventory.getReconciliationStatus())
-                        .append(",")
-
-                        .append(
-                                inventory.getQuantityDifference())
-                        .append(",")
-
-                        .append(
-                                inventory.getRemarks())
-                        .append("\n");
-            }
-
-            return ResponseEntity.ok()
-                    .header(
-                            HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=inventory.csv")
-                    .contentType(
-                            MediaType.parseMediaType(
-                                    "text/csv"))
-                    .body(csv.toString());
-        }
-
-        return ResponseEntity.ok(
-                inventoryList);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
             summary = "Get inventory by SKU",
-            description = "Returns inventory details for a specific SKU"
+            description =
+                    "Returns inventory details for a specific SKU within a batch."
     )
     @ApiResponses({
             @ApiResponse(
@@ -176,8 +153,11 @@ public class InventoryController {
                     description = "Inventory not found"
             )
     })
-    @GetMapping("/batch/{batchId}/sku/{sku}")
-    public ResponseEntity<InventoryResponse> getInventoryBySku(
+    @GetMapping(
+            "/batch/{batchId}/sku/{sku}"
+    )
+    public ResponseEntity<InventoryResponse>
+    getInventoryBySku(
             @PathVariable UUID batchId,
             @PathVariable String sku) {
 

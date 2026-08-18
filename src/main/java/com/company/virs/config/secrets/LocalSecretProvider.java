@@ -6,18 +6,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class LocalSecretProvider implements SecretProvider {
 
-    // Database
     @Value("${spring.datasource.username}")
     private String username;
 
     @Value("${spring.datasource.password}")
     private String password;
 
-    // Vendor
     @Value("${virs.vendor.api-key}")
     private String apiKey;
 
-    // MinIO
     @Value("${minio.endpoint}")
     private String minioEndpoint;
 
@@ -30,13 +27,9 @@ public class LocalSecretProvider implements SecretProvider {
     @Value("${minio.bucket-name}")
     private String bucketName;
 
-    @Value("${slack.webhook-url}")
+    @Value("${slack.webhook-url:}")
     private String slackWebhookUrl;
 
-    @Override
-    public String getSlackWebhookUrl() {
-        return slackWebhookUrl;
-    }
     @Override
     public String getDatabaseUsername() {
         return username;
@@ -70,5 +63,10 @@ public class LocalSecretProvider implements SecretProvider {
     @Override
     public String getMinioBucketName() {
         return bucketName;
+    }
+
+    @Override
+    public String getSlackWebhookUrl() {
+        return slackWebhookUrl;
     }
 }

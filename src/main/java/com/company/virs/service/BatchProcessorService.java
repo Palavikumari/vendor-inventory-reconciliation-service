@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface BatchProcessorService {
 
-    void processBatches(
+    BatchProcessingResult processBatches(
             List<VendorInventory> inventories);
 }

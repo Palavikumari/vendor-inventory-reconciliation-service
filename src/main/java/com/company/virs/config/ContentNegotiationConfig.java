@@ -1,12 +1,12 @@
 package com.company.virs.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class ContentNegotiationConfig
-        implements WebMvcConfigurer {
+public class ContentNegotiationConfig implements WebMvcConfigurer {
 
     @Override
     public void configureContentNegotiation(
@@ -15,6 +15,10 @@ public class ContentNegotiationConfig
         configurer
                 .favorParameter(true)
                 .parameterName("format")
-                .ignoreAcceptHeader(false);
+                .ignoreAcceptHeader(false)
+                .useRegisteredExtensionsOnly(false)
+                .defaultContentType(MediaType.APPLICATION_JSON)
+                .mediaType("json", MediaType.APPLICATION_JSON)
+                .mediaType("csv", MediaType.parseMediaType("text/csv"));
     }
 }

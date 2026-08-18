@@ -1,6 +1,5 @@
 package com.company.virs.config;
 
-import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
@@ -17,14 +16,29 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(
                         new Info()
-                                .title("Vendor Inventory Reconciliation Service API")
+                                .title(
+                                        "Vendor Inventory Reconciliation Service API")
                                 .description(
-                                        "API for uploading vendor inventory files, batch reconciliation and discrepancy reporting.")
-                                .version("v1")
+                                        """
+                                        REST API for the Vendor Inventory Reconciliation Service (VIRS).
+
+                                        The service:
+                                        - Ingests vendor inventory CSV files
+                                        - Validates and parses vendor inventory data
+                                        - Stores inventory data in PostgreSQL
+                                        - Reconciles vendor inventory against a reference inventory source
+                                        - Tracks reconciliation results
+                                        - Publishes discrepancy notifications
+                                        - Supports manual batch retry
+                                        - Supports JSON and CSV response representations
+                                        """)
+                                .version("v1.0.0")
                                 .contact(
                                         new Contact()
-                                                .name("Engineering Team")
+                                                .name("VIRS Engineering Team")
                                                 .email("engineering@company.com"))
-                );
+                                .license(
+                                        new License()
+                                                .name("Internal Use")));
     }
 }

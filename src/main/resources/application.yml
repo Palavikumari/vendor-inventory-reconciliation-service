@@ -7,10 +7,9 @@ spring:
 
   datasource:
     url: jdbc:postgresql://localhost:5432/virs_db
-db:
-  username: ${DB_USERNAME}
-  password: ${DB_PASSWORD}
-
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
@@ -27,7 +26,7 @@ db:
 
 springdoc:
   swagger-ui:
-    path: /swagger-ui.html
+    path: /swagger-ui/index.html
   api-docs:
     path: /v3/api-docs
 
@@ -45,13 +44,16 @@ logging:
 
 virs:
   vendor:
-    api-key: local-dev-api-key
+    api-key: ${VENDOR_API_KEY:local-dev-api-key}
 
 minio:
-  endpoint: http://localhost:9000
-  access-key: ${MINIO_ACCESS_KEY}
-  secret-key: ${MINIO_SECRET_KEY}
-  bucket-name: virs-inventory
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket-name: ${MINIO_BUCKET_NAME:virs-inventory}
 
 slack:
-  webhook-url: https://hooks.slack.com/services/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
+  webhook-url: ${SLACK_WEBHOOK_URL:}
+
+
+#http://localhost:8081/swagger-ui/index.html

@@ -23,9 +23,11 @@ import java.util.List;
 public class CsvParserImpl implements CsvParser {
 
     @Override
-    public List<InventoryRequest> parse(MultipartFile file) {
+    public List<InventoryRequest> parse(
+            MultipartFile file) {
 
-        List<InventoryRequest> inventoryList = new ArrayList<>();
+        List<InventoryRequest> inventoryList =
+                new ArrayList<>();
 
         try (
                 BufferedReader reader =
@@ -41,32 +43,108 @@ public class CsvParserImpl implements CsvParser {
                                         .builder()
                                         .setHeader()
                                         .setSkipHeaderRecord(true)
+                                        .setIgnoreEmptyLines(true)
+                                        .setTrim(true)
                                         .build())
         ) {
 
+            validateHeaders(csvParser);
+
             for (CSVRecord record : csvParser) {
+
+                if (record.size() == 0) {
+                    continue;
+                }
+
+                String vendorId =
+                        record.get(CsvConstants.VENDOR_ID);
+
+                String sku =
+                        record.get(CsvConstants.SKU);
+
+                String productName =
+                        record.get(
+                                CsvConstants.PRODUCT_NAME);
+
+                String quantityValue =
+                        record.get(CsvConstants.QUANTITY);
+
+                String unitPriceValue =
+                        record.get(CsvConstants.UNIT_PRICE);
+
+                if (vendorId == null
+                        || vendorId.isBlank()
+                        || sku == null
+                        || sku.isBlank()
+                        || productName == null
+                        || productName.isBlank()
+                        || quantityValue == null
+                        || quantityValue.isBlank()
+                        || unitPriceValue == null
+                        || unitPriceValue.isBlank()) {
+
+                    throw new ValidationException(
+                            "CSV contains missing required values at record "
+                                    + record.getRecordNumber());
+                }
+
+                Integer quantity;
+
+                BigDecimal unitPrice;
+
+                try {
+
+                    quantity =
+                            Integer.parseInt(
+                                    quantityValue);
+
+                    unitPrice =
+                            new BigDecimal(
+                                    unitPriceValue);
+
+                } catch (NumberFormatException ex) {
+
+                    throw new ValidationException(
+                            "Invalid numeric value at CSV record "
+                                    + record.getRecordNumber());
+                }
+
+                if (quantity < 0) {
+
+                    throw new ValidationException(
+                            "Quantity cannot be negative at CSV record "
+                                    + record.getRecordNumber());
+                }
+
+                if (unitPrice.compareTo(
+                        BigDecimal.ZERO) < 0) {
+
+                    throw new ValidationException(
+                            "Unit price cannot be negative at CSV record "
+                                    + record.getRecordNumber());
+                }
 
                 InventoryRequest request =
                         InventoryRequest.builder()
-                                .vendorId(record.get(CsvConstants.VENDOR_ID))
-                                .sku(record.get("sku"))
-                                .productName(record.get("productName"))
-                                .quantity(
-                                        Integer.parseInt(
-                                                record.get("quantity")))
-                                .unitPrice(
-                                        new BigDecimal(
-                                                record.get("unitPrice")))
+                                .vendorId(vendorId)
+                                .sku(sku)
+                                .productName(productName)
+                                .quantity(quantity)
+                                .unitPrice(unitPrice)
                                 .build();
 
                 inventoryList.add(request);
             }
 
             log.info(
-                    "Successfully parsed {} records.",
+                    "Successfully parsed {} inventory records.",
                     inventoryList.size());
 
             return inventoryList;
+
+        } catch (ValidationException ex) {
+
+            throw ex;
 
         } catch (IOException ex) {
 
@@ -75,7 +153,7 @@ public class CsvParserImpl implements CsvParser {
                     ex);
 
             throw new ValidationException(
-                    "Unable to parse CSV file.");
+                    "Unable to read CSV file.");
 
         } catch (Exception ex) {
 
@@ -85,6 +163,36 @@ public class CsvParserImpl implements CsvParser {
 
             throw new ValidationException(
                     "Invalid CSV file format.");
+        }
+    }
+
+    private void validateHeaders(
+            CSVParser csvParser) {
+
+        List<String> headers =
+                csvParser.getHeaderNames();
+
+        List<String> requiredHeaders =
+                List.of(
+                        CsvConstants.VENDOR_ID,
+                        CsvConstants.SKU,
+                        CsvConstants.PRODUCT_NAME,
+                        CsvConstants.QUANTITY,
+                        CsvConstants.UNIT_PRICE);
+
+        List<String> missingHeaders =
+                requiredHeaders.stream()
+                        .filter(header ->
+                                !headers.contains(header))
+                        .toList();
+
+        if (!missingHeaders.isEmpty()) {
+
+            throw new ValidationException(
+                    "Invalid CSV headers. Missing required columns: "
+                            + missingHeaders
+                            + ". Expected columns: "
+                            + requiredHeaders);
         }
     }
 }

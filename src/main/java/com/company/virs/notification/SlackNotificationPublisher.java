@@ -19,30 +19,22 @@ public class SlackNotificationPublisher
 
     private final SecretProvider secretProvider;
 
-    private final RestTemplate restTemplate =
-            new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
-    public void publishNotification(
-            String message) {
+    public void publishNotification(String message) {
+
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, String> payload =
+                Map.of("text", message);
+
+        HttpEntity<Map<String, String>> request =
+                new HttpEntity<>(payload, headers);
 
         try {
-
-            HttpHeaders headers =
-                    new HttpHeaders();
-
-            headers.setContentType(
-                    MediaType.APPLICATION_JSON);
-
-            Map<String, String> payload =
-                    Map.of(
-                            "text",
-                            message);
-
-            HttpEntity<Map<String, String>> request =
-                    new HttpEntity<>(
-                            payload,
-                            headers);
 
             restTemplate.postForEntity(
                     secretProvider.getSlackWebhookUrl(),
@@ -57,6 +49,8 @@ public class SlackNotificationPublisher
             log.error(
                     "Failed to publish Slack notification",
                     ex);
+
+            throw ex;
         }
     }
 }
