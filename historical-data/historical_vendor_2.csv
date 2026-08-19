@@ -1,0 +1,6 @@
+vendorId,sku,productName,quantity,unitPrice
+VENDOR002,SKU200,Printer,50,18000
+VENDOR002,SKU201,Scanner,70,15000
+VENDOR002,SKU202,Projector,25,55000
+VENDOR002,SKU203,Docking Station,120,4500
+VENDOR002,SKU204,Headset,90,3500
