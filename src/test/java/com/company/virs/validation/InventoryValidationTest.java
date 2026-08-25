@@ -2,43 +2,49 @@ package com.company.virs.validation;
 
 import com.company.virs.dto.request.InventoryRequest;
 import com.company.virs.exception.ValidationException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class InventoryValidationTest {
 
-    private final InventoryValidation inventoryValidation =
-            new InventoryValidation();
+    private InventoryValidation validation;
 
-    private InventoryRequest validRequest() {
+    @BeforeEach
+    void setUp() {
+        validation = new InventoryValidation();
+    }
+
+    private InventoryRequest buildValidRequest() {
 
         return InventoryRequest.builder()
-                .vendorId("VENDOR001")
-                .sku("SKU1001")
+                .vendorId("V001")
+                .productCode("P001")
                 .productName("Laptop")
-                .quantity(100)
-                .unitPrice(new BigDecimal("25000.00"))
+                .quantity(10)
+                .unitPrice(BigDecimal.TEN)
                 .build();
     }
 
     @Test
-    void shouldPassForValidInventory() {
+    void validate_ShouldPass_WhenRequestIsValid() {
+
+        InventoryRequest request =
+                buildValidRequest();
 
         assertDoesNotThrow(
-                () -> inventoryValidation.validate(validRequest())
+                () -> validation.validate(request)
         );
     }
 
     @Test
-    void shouldRejectNullRequest() {
+    void validate_ShouldThrow_WhenRequestIsNull() {
 
         ValidationException exception =
                 assertThrows(
                         ValidationException.class,
-                        () -> inventoryValidation.validate(null)
+                        () -> validation.validate(null)
                 );
 
         assertEquals(
@@ -48,15 +54,17 @@ class InventoryValidationTest {
     }
 
     @Test
-    void shouldRejectMissingVendorId() {
+    void validate_ShouldThrow_WhenVendorIdMissing() {
 
-        InventoryRequest request = validRequest();
-        request.setVendorId("");
+        InventoryRequest request =
+                buildValidRequest();
+
+        request.setVendorId(null);
 
         ValidationException exception =
                 assertThrows(
                         ValidationException.class,
-                        () -> inventoryValidation.validate(request)
+                        () -> validation.validate(request)
                 );
 
         assertEquals(
@@ -66,15 +74,17 @@ class InventoryValidationTest {
     }
 
     @Test
-    void shouldRejectMissingSku() {
+    void validate_ShouldThrow_WhenProductCodeMissing() {
 
-        InventoryRequest request = validRequest();
-        request.setSku("");
+        InventoryRequest request =
+                buildValidRequest();
+
+        request.setProductCode(null);
 
         ValidationException exception =
                 assertThrows(
                         ValidationException.class,
-                        () -> inventoryValidation.validate(request)
+                        () -> validation.validate(request)
                 );
 
         assertEquals(
@@ -84,15 +94,17 @@ class InventoryValidationTest {
     }
 
     @Test
-    void shouldRejectMissingProductName() {
+    void validate_ShouldThrow_WhenProductNameMissing() {
 
-        InventoryRequest request = validRequest();
-        request.setProductName("");
+        InventoryRequest request =
+                buildValidRequest();
+
+        request.setProductName(null);
 
         ValidationException exception =
                 assertThrows(
                         ValidationException.class,
-                        () -> inventoryValidation.validate(request)
+                        () -> validation.validate(request)
                 );
 
         assertEquals(
@@ -102,15 +114,17 @@ class InventoryValidationTest {
     }
 
     @Test
-    void shouldRejectNullQuantity() {
+    void validate_ShouldThrow_WhenQuantityIsNull() {
 
-        InventoryRequest request = validRequest();
+        InventoryRequest request =
+                buildValidRequest();
+
         request.setQuantity(null);
 
         ValidationException exception =
                 assertThrows(
                         ValidationException.class,
-                        () -> inventoryValidation.validate(request)
+                        () -> validation.validate(request)
                 );
 
         assertEquals(
@@ -120,15 +134,17 @@ class InventoryValidationTest {
     }
 
     @Test
-    void shouldRejectNegativeQuantity() {
+    void validate_ShouldThrow_WhenQuantityNegative() {
 
-        InventoryRequest request = validRequest();
+        InventoryRequest request =
+                buildValidRequest();
+
         request.setQuantity(-1);
 
         ValidationException exception =
                 assertThrows(
                         ValidationException.class,
-                        () -> inventoryValidation.validate(request)
+                        () -> validation.validate(request)
                 );
 
         assertEquals(
@@ -138,26 +154,17 @@ class InventoryValidationTest {
     }
 
     @Test
-    void shouldAcceptZeroQuantity() {
+    void validate_ShouldThrow_WhenUnitPriceIsNull() {
 
-        InventoryRequest request = validRequest();
-        request.setQuantity(0);
+        InventoryRequest request =
+                buildValidRequest();
 
-        assertDoesNotThrow(
-                () -> inventoryValidation.validate(request)
-        );
-    }
-
-    @Test
-    void shouldRejectNullUnitPrice() {
-
-        InventoryRequest request = validRequest();
         request.setUnitPrice(null);
 
         ValidationException exception =
                 assertThrows(
                         ValidationException.class,
-                        () -> inventoryValidation.validate(request)
+                        () -> validation.validate(request)
                 );
 
         assertEquals(
@@ -167,15 +174,19 @@ class InventoryValidationTest {
     }
 
     @Test
-    void shouldRejectNegativeUnitPrice() {
+    void validate_ShouldThrow_WhenUnitPriceNegative() {
 
-        InventoryRequest request = validRequest();
-        request.setUnitPrice(new BigDecimal("-10.00"));
+        InventoryRequest request =
+                buildValidRequest();
+
+        request.setUnitPrice(
+                BigDecimal.valueOf(-1)
+        );
 
         ValidationException exception =
                 assertThrows(
                         ValidationException.class,
-                        () -> inventoryValidation.validate(request)
+                        () -> validation.validate(request)
                 );
 
         assertEquals(
@@ -185,13 +196,28 @@ class InventoryValidationTest {
     }
 
     @Test
-    void shouldAcceptZeroUnitPrice() {
+    void validate_ShouldAcceptZeroQuantity() {
 
-        InventoryRequest request = validRequest();
+        InventoryRequest request =
+                buildValidRequest();
+
+        request.setQuantity(0);
+
+        assertDoesNotThrow(
+                () -> validation.validate(request)
+        );
+    }
+
+    @Test
+    void validate_ShouldAcceptZeroUnitPrice() {
+
+        InventoryRequest request =
+                buildValidRequest();
+
         request.setUnitPrice(BigDecimal.ZERO);
 
         assertDoesNotThrow(
-                () -> inventoryValidation.validate(request)
+                () -> validation.validate(request)
         );
     }
 }

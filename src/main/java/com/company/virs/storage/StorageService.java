@@ -4,7 +4,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface StorageService {
 
-    String uploadFile(MultipartFile file);
+    String uploadFile(
+            MultipartFile file,
+            String objectName
+    );
 
-    boolean deleteFile(String fileName);
+    boolean deleteFile(
+            String objectName
+    );
 }

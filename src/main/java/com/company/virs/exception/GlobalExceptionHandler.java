@@ -1,70 +1,114 @@
 package com.company.virs.exception;
 
+import com.company.virs.dto.response.ErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationException(
-            ValidationException ex) {
+    public ResponseEntity<ErrorResponse> handleValidation(
+            ValidationException ex,
+            HttpServletRequest request) {
 
-        Map<String, Object> response =
-                new LinkedHashMap<>();
-
-        response.put(
-                "timestamp",
-                LocalDateTime.now());
-
-        response.put(
-                "status",
-                HttpStatus.BAD_REQUEST.value());
-
-        response.put(
-                "error",
-                HttpStatus.BAD_REQUEST.getReasonPhrase());
-
-        response.put(
-                "message",
-                ex.getMessage());
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(response);
+        return build(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(
-            ResourceNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleNotFound(
+            ResourceNotFoundException ex,
+            HttpServletRequest request) {
 
-        Map<String, Object> response =
-                new LinkedHashMap<>();
+        return build(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage(),
+                request
+        );
+    }
 
-        response.put(
-                "timestamp",
-                LocalDateTime.now());
+    @ExceptionHandler(
+            MissingRequestHeaderException.class
+    )
+    public ResponseEntity<ErrorResponse> handleMissingHeader(
+            MissingRequestHeaderException ex,
+            HttpServletRequest request) {
 
-        response.put(
-                "status",
-                HttpStatus.NOT_FOUND.value());
+        return build(
+                HttpStatus.BAD_REQUEST,
+                "Required header is missing: "
+                        + ex.getHeaderName(),
+                request
+        );
+    }
 
-        response.put(
-                "error",
-                HttpStatus.NOT_FOUND.getReasonPhrase());
+    @ExceptionHandler(
+            HttpMediaTypeNotAcceptableException.class
+    )
+    public ResponseEntity<ErrorResponse> handleNotAcceptable(
+            HttpMediaTypeNotAcceptableException ex,
+            HttpServletRequest request) {
 
-        response.put(
-                "message",
-                ex.getMessage());
+        return build(
+                HttpStatus.NOT_ACCEPTABLE,
+                "Requested response format is not supported.",
+                request
+        );
+    }
+
+    @ExceptionHandler(
+            DataIntegrityViolationException.class
+    )
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(
+            DataIntegrityViolationException ex,
+            HttpServletRequest request) {
+
+        return build(
+                HttpStatus.CONFLICT,
+                "Request conflicts with an existing record.",
+                request
+        );
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(
+            Exception ex,
+            HttpServletRequest request) {
+
+        return build(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Unexpected internal server error.",
+                request
+        );
+    }
+
+    private ResponseEntity<ErrorResponse> build(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request) {
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .timestamp(LocalDateTime.now())
+                        .status(status.value())
+                        .error(status.getReasonPhrase())
+                        .message(message)
+                        .path(request.getRequestURI())
+                        .build();
 
         return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
+                .status(status)
                 .body(response);
     }
 }

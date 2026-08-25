@@ -2,13 +2,21 @@ package com.company.virs.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "batch_execution")
+@Table(
+        name = "batch_execution",
+        indexes = {
+                @Index(
+                        name = "idx_batch_source",
+                        columnList = "source_batch_id"
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,50 +31,57 @@ public class BatchExecution {
     @Column(
             name = "file_name",
             nullable = false,
-            length = 255)
+            length = 255
+    )
     private String fileName;
 
     @Column(
             name = "execution_type",
             nullable = false,
-            length = 50)
+            length = 50
+    )
     private String executionType;
+
+    @Column(name = "source_batch_id")
+    private UUID sourceBatchId;
 
     @Column(
             name = "status",
             nullable = false,
-            length = 30)
+            length = 30
+    )
     private String status;
 
-    @Column(
-            name = "total_records")
+    @Column(name = "total_records")
     private Integer totalRecords;
 
-    @Column(
-            name = "processed_records")
+    @Column(name = "processed_records")
     private Integer processedRecords;
 
-    @Column(
-            name = "failed_records")
+    @Column(name = "failed_records")
     private Integer failedRecords;
 
     @Column(
             name = "batch_size",
-            nullable = false)
+            nullable = false
+    )
     private Integer batchSize;
 
     @Column(
             name = "start_time",
-            nullable = false)
+            nullable = false
+    )
     private LocalDateTime startTime;
 
-    @Column(
-            name = "end_time")
+    @Column(name = "end_time")
     private LocalDateTime endTime;
 
     @OneToMany(
             mappedBy = "batchExecution",
             cascade = CascadeType.ALL,
-            orphanRemoval = true)
-    private List<VendorInventory> vendorInventories;
+            orphanRemoval = true
+    )
+    @Builder.Default
+    private List<VendorInventory> vendorInventories =
+            new ArrayList<>();
 }

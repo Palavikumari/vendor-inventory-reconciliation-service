@@ -9,7 +9,7 @@ public final class CsvConstants {
             "vendorId";
 
     public static final String SKU =
-            "sku";
+            "productCode";
 
     public static final String PRODUCT_NAME =
             "productName";

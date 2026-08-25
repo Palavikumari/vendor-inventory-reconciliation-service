@@ -2,13 +2,28 @@ package com.company.virs.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "vendor_inventory")
+@Table(
+        name = "vendor_inventory",
+        indexes = {
+                @Index(
+                        name = "idx_vendor_batch",
+                        columnList = "batch_id"
+                ),
+                @Index(
+                        name = "idx_vendor_productCode",
+                        columnList = "productCode"
+                ),
+                @Index(
+                        name = "idx_vendor_reconciliation_status",
+                        columnList = "reconciliation_status"
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,41 +36,46 @@ public class VendorInventory {
     private UUID vendorInventoryId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "batch_id", nullable = false)
+    @JoinColumn(
+            name = "batch_id",
+            nullable = false
+    )
     private BatchExecution batchExecution;
 
     @Column(
             name = "vendor_id",
             nullable = false,
-            length = 100)
+            length = 100
+    )
     private String vendorId;
 
     @Column(
-            name = "sku",
+            name = "product_code",
             nullable = false,
-            length = 100)
-    private String sku;
+            length = 100
+    )
+    private String productCode;
 
     @Column(
             name = "product_name",
             nullable = false,
-            length = 255)
+            length = 255
+    )
     private String productName;
 
-    @Column(name = "quantity", nullable = false)
+    @Column(
+            name = "quantity",
+            nullable = false
+    )
     private Integer quantity;
 
     @Column(name = "unit_price")
     private BigDecimal unitPrice;
 
-    @Column(name = "upload_time", nullable = false)
-    private LocalDateTime uploadTime;
-
-    // Reconciliation Result
-
     @Column(
             name = "reconciliation_status",
-            length = 30)
+            length = 30
+    )
     private String reconciliationStatus;
 
     @Column(name = "quantity_difference")
@@ -63,15 +83,22 @@ public class VendorInventory {
 
     @Column(
             name = "remarks",
-            length = 500)
+            length = 500
+    )
     private String remarks;
 
-    // Notification Tracking
     @Column(
             name = "notification_status",
-            length = 20)
+            length = 20
+    )
     private String notificationStatus;
 
     @Column(name = "notification_time")
     private LocalDateTime notificationTime;
+
+    @Column(
+            name = "upload_time",
+            nullable = false
+    )
+    private LocalDateTime uploadTime;
 }

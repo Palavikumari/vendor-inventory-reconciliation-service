@@ -8,7 +8,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-
 import java.util.Map;
 
 @Component
@@ -19,38 +18,58 @@ public class SlackNotificationPublisher
 
     private final SecretProvider secretProvider;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate =
+            new RestTemplate();
 
     @Override
-    public void publishNotification(String message) {
+    public boolean publishNotification(String message) {
 
-        HttpHeaders headers = new HttpHeaders();
+        String webhook =
+                secretProvider.getSlackWebhookUrl();
 
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (webhook == null || webhook.isBlank()) {
 
-        Map<String, String> payload =
-                Map.of("text", message);
+            log.warn(
+                    "Slack webhook is not configured. "
+                            + "Notification was not sent."
+            );
+
+            return false;
+        }
+
+        HttpHeaders headers =
+                new HttpHeaders();
+
+        headers.setContentType(
+                MediaType.APPLICATION_JSON
+        );
 
         HttpEntity<Map<String, String>> request =
-                new HttpEntity<>(payload, headers);
+                new HttpEntity<>(
+                        Map.of("text", message),
+                        headers
+                );
 
         try {
 
             restTemplate.postForEntity(
-                    secretProvider.getSlackWebhookUrl(),
+                    webhook,
                     request,
-                    String.class);
+                    String.class
+            );
 
-            log.info(
-                    "Slack notification sent successfully");
+            log.info("Slack notification published successfully");
+
+            return true;
 
         } catch (Exception ex) {
 
             log.error(
-                    "Failed to publish Slack notification",
-                    ex);
+                    "Unable to publish Slack notification",
+                    ex
+            );
 
-            throw ex;
+            return false;
         }
     }
 }

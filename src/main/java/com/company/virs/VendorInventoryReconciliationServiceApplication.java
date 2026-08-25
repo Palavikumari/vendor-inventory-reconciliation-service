@@ -10,4 +10,5 @@ public class VendorInventoryReconciliationServiceApplication {
 		SpringApplication.run(VendorInventoryReconciliationServiceApplication.class, args);
 	}
 
+
 }

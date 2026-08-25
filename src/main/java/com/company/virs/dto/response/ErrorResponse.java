@@ -2,7 +2,6 @@ package com.company.virs.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Getter

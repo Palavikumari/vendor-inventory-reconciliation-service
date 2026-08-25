@@ -1,9 +1,10 @@
 package com.company.virs.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
-
 import java.math.BigDecimal;
 
 @Getter
@@ -11,7 +12,10 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(name = "InventoryRequest",description = "Vendor inventory record")
+@Schema(
+        name = "InventoryRequest",
+        description = "Vendor inventory record"
+)
 public class InventoryRequest {
 
     @NotBlank
@@ -20,7 +24,7 @@ public class InventoryRequest {
 
     @NotBlank
     @Schema(example = "SKU1001")
-    private String sku;
+    private String productCode;
 
     @NotBlank
     @Schema(example = "Laptop")
@@ -32,7 +36,7 @@ public class InventoryRequest {
     private Integer quantity;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     @Schema(example = "24999.99")
     private BigDecimal unitPrice;
 }

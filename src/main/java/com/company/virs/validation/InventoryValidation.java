@@ -4,7 +4,6 @@ import com.company.virs.dto.request.InventoryRequest;
 import com.company.virs.exception.ValidationException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-
 import java.math.BigDecimal;
 
 @Component
@@ -20,7 +19,7 @@ public class InventoryValidation {
             throw new ValidationException("Vendor Id is mandatory.");
         }
 
-        if (!StringUtils.hasText(request.getSku())) {
+        if (!StringUtils.hasText(request.getProductCode())) {
             throw new ValidationException("SKU is mandatory.");
         }
 
